@@ -1,5 +1,3 @@
-"""Pydantic models shared across the audit pipeline, agent tools, and report."""
-
 import re
 from datetime import datetime
 from enum import StrEnum
@@ -19,9 +17,9 @@ class Severity(StrEnum):
 
 
 class Confidence(StrEnum):
-    CONFIRMED = "confirmed"  # a user-confirmed rule is broken, or the fact is certain
-    LIKELY = "likely"  # a rule the data strongly supports is broken
-    POSSIBLE = "possible"  # statistical signal only; worth a human look
+    CONFIRMED = "confirmed" 
+    LIKELY = "likely"  
+    POSSIBLE = "possible"  
 
 
 # --- Contract rules: a closed set of rule types. The LLM can only express these. ---
@@ -77,7 +75,10 @@ class PatternRule(_Rule):
     def _safe_regex(cls, v: str) -> str:
         if _NESTED_QUANTIFIER.search(v) or re.search(r"\\\d", v):
             raise ValueError("regex uses nested quantifiers or backreferences, which are not allowed")
-        re.compile(v)
+        try:
+            re.compile(v)
+        except re.error as exc:  # not a ValueError, so Pydantic would not catch it
+            raise ValueError(f"invalid regex: {exc}") from exc
         return v
 
 
@@ -104,10 +105,9 @@ Rule = Annotated[
 
 
 class RuleSource(StrEnum):
-    PROFILER = "profiler"  # inferred deterministically from the data
+    PROFILER = "profiler"  
     AGENT = "agent"  # proposed by the LLM
-    CONTRACT_FILE = "contract-file"  # supplied by the user
-
+    CONTRACT_FILE = "contract-file"  
 
 class ScoredRule(BaseModel):
     rule: Rule
@@ -174,7 +174,7 @@ class SheetProfile(BaseModel):
 
 
 class Evidence(BaseModel):
-    row: int  # 1-based spreadsheet row number, as the user sees it
+    row: int  
     values: dict[str, str]
 
 

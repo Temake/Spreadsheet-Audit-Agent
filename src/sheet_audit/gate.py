@@ -1,9 +1,3 @@
-"""Gate 1: decide whether a sheet is a table we can audit, and shape it into a DataFrame.
-
-Refusing early ("no header row found") is safer than auditing something that is not a
-table and reporting anomalies that are really just layout.
-"""
-
 import math
 from dataclasses import dataclass
 
@@ -21,8 +15,6 @@ HEADER_SCAN_ROWS = 10
 @dataclass
 class SheetTable:
     name: str
-    # Cells are str or None. The index is the 0-based raw row position, so the
-    # spreadsheet row number the user sees is index + 1.
     df: pd.DataFrame
     gate: GateResult
 
@@ -34,7 +26,7 @@ def row_number(index: int) -> int:
 def _find_header(rows: list[list], width: int) -> int | None:
     for i, row in enumerate(rows[:HEADER_SCAN_ROWS]):
         filled = [v for v in row if v is not None]
-        if len(filled) < max(2, math.ceil(0.5 * width)):
+        if not filled or len(filled) < max(min(2, width), math.ceil(0.5 * width)):
             continue
         if sum(looks_like_label(v) for v in filled) / len(filled) >= 0.8:
             return i

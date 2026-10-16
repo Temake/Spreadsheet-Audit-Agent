@@ -1,9 +1,3 @@
-"""Safe, read-only loading of CSV and XLSX files with size and volume limits.
-
-The original file is only ever opened for reading. Cell contents are treated as data:
-formulas are read as their cached values and macros are rejected outright.
-"""
-
 import csv
 import io
 import logging
@@ -25,10 +19,7 @@ MAX_TRAILING_EMPTY_ROWS = 1000
 
 
 class InputError(Exception):
-    """The file cannot be loaded. The message is safe to show to the user."""
-
-
-def load_file(path: str | Path, settings: Settings) -> list[SheetTable]:
+   def load_file(path: str | Path, settings: Settings) -> list[SheetTable]:
     path = Path(path)
     if not path.is_file():
         raise InputError(f"file not found: {path.name}")
@@ -44,6 +35,7 @@ def load_file(path: str | Path, settings: Settings) -> list[SheetTable]:
     raw = _read_xlsx(path, settings) if ext == ".xlsx" else {path.stem: _read_csv(path, settings)}
     log.info("loaded %s: %d sheet(s), %d bytes", ext, len(raw), size)
     return [prepare_sheet(name, rows, settings) for name, rows in raw.items()]
+
 
 
 def _row_limit(settings: Settings) -> int:

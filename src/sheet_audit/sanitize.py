@@ -5,7 +5,8 @@ import re
 # C0/C1 control characters, including ESC (blocks ANSI terminal-escape injection).
 _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
 _WHITESPACE = re.compile(r"\s+")
-_MARKDOWN_SPECIAL = re.compile(r"([\\`*_{}\[\]<>()#+!|~])")
+# Enough to block emphasis, links/images, HTML, headings, and table breaks.
+_MARKDOWN_SPECIAL = re.compile(r"([\\`*_\[\]<>#|~])")
 
 
 def clean(text: object, max_len: int = 80) -> str:

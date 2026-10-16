@@ -15,6 +15,7 @@ import pandas as pd
 MISSING_TOKENS = {"", "na", "n/a", "null", "none", "nan"}
 EXCEL_ERRORS = {"#DIV/0!", "#N/A", "#NAME?", "#NULL!", "#NUM!", "#REF!", "#VALUE!"}
 _BOOLEAN_TOKENS = {"true", "false", "yes", "no"}
+EMAIL_REGEX = r"[^@\s]+@[^@\s]+\.[A-Za-z]{2,}"
 
 
 def normalize_cell(value: object) -> str | None:
