@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import yaml
+from dotenv import load_dotenv
 from pydantic import ValidationError
 
 from sheet_audit.config import Settings
@@ -81,6 +82,9 @@ def _check_output(path: Path, source: Path, force: bool) -> None:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
+    # Export .env into the process environment so boto3 sees AWS_* values too.
+    # Variables already set in the shell take precedence.
+    load_dotenv()
     settings = Settings()
     out = args.out or Path(f"{args.file.stem}_audit.md")
 
