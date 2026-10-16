@@ -3,6 +3,7 @@
 import os
 
 import pytest
+from dotenv import dotenv_values
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage
 
@@ -62,11 +63,17 @@ def test_step_budget_stops_a_looping_agent(samples, settings):
         run_agent(session, settings, model=ScriptedModel(messages=loop))
 
 
+LIVE_ENV = {**dotenv_values(".env"), **os.environ}
+
+
 @pytest.mark.bedrock
-@pytest.mark.skipif(not os.getenv("AUDIT_BEDROCK_MODEL_ID"), reason="AUDIT_BEDROCK_MODEL_ID not set")
-def test_real_bedrock_agent_end_to_end(samples):
+@pytest.mark.skipif(not LIVE_ENV.get("AUDIT_BEDROCK_MODEL_ID"), reason="AUDIT_BEDROCK_MODEL_ID not set")
+def test_real_bedrock_agent_end_to_end(samples, monkeypatch):
     from sheet_audit.config import Settings
 
+    for key, value in LIVE_ENV.items():
+        if key.startswith(("AUDIT_", "AWS_")) and value:
+            monkeypatch.setenv(key, value)
     settings = Settings()
     session = AuditSession(load_file(samples["orders"], settings), settings)
     narrative = run_agent(session, settings)

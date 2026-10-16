@@ -9,7 +9,7 @@ It is built around one principle: **the LLM reasons, the code decides.** Claude 
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
-python samples/make_samples.py                       # writes samples/orders_with_issues.xlsx and clean_orders.csv
+python samples/make_samples.py   # optional: generates two demo files with known problems (see below)
 
 # No AWS needed: a fully deterministic audit, confirming each proposed rule interactively
 sheet-audit samples/orders_with_issues.xlsx --no-llm
@@ -17,10 +17,32 @@ sheet-audit samples/orders_with_issues.xlsx --no-llm
 # Same, but accept well-supported rules without asking (scripts/CI)
 sheet-audit samples/orders_with_issues.xlsx --no-llm --auto --force
 
-# With the agent (Claude on Bedrock)
-cp .env.example .env    # set AUDIT_BEDROCK_MODEL_ID; AWS credentials come from your normal AWS profile
+# With the agent (Claude Sonnet 4.6 on Bedrock, using a Bedrock API key)
+cp .env.example .env    # set AWS_BEARER_TOKEN_BEDROCK; model ID and region are pre-filled
 sheet-audit samples/orders_with_issues.xlsx
 ```
+
+### Auditing your own file
+
+Pass the file's path. A relative path is resolved from the folder you run the command in, so a file in the project folder can be given by name alone. Quote paths that contain spaces.
+
+```bash
+sheet-audit sales.xlsx                                        # file in the current folder
+sheet-audit data/sales.csv                                    # file in a subfolder
+sheet-audit "C:\Users\me\Documents\Sales Q3.xlsx"             # absolute path (Windows: Explorer → right-click → Copy as path)
+sheet-audit ~/Documents/sales.xlsx -o ~/Documents/sales_audit.md
+```
+
+The file is only read, never modified. The report goes to `<file name>_audit.md` in the current folder unless you pass `-o`.
+
+### Sample files
+
+`python samples/make_samples.py` writes two files into `samples/` for trying the tool and for the tests:
+
+- `orders_with_issues.xlsx`: an orders sheet with 13 deliberately planted problems (a duplicate row, a reused order ID, a total that doesn't add up, a `#DIV/0!`, "Shiped", a 999 price typo, a prompt-injection attempt in a notes cell, …), plus a clean Customers sheet and a Notes sheet that isn't a table.
+- `clean_orders.csv`: the same kind of data with no problems. The audit should report nothing.
+
+Because the planted rows are known (`EXPECTED` in the script), the tests can check that every problem is found at exactly the right rows, and that nothing is invented.
 
 | Option | Effect |
 |---|---|
@@ -31,6 +53,7 @@ sheet-audit samples/orders_with_issues.xlsx
 | `--no-llm` | Deterministic audit only; no network calls |
 | `--sheet NAME` | Audit only the named sheet(s) |
 | `-o report.md` | Report path. Refuses to overwrite the input, or an existing file without `--force` |
+| `--no-open` | Don't open the report when done. By default it opens in VS Code (when run from its terminal) or your default app; never in scripts or CI |
 
 ## How it works
 

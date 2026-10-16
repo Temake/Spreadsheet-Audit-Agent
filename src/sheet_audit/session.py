@@ -29,10 +29,11 @@ MAX_PROFILE_CALLS_PER_SHEET = 2
 
 
 class AuditError(Exception):
-    
- def auto_confirmer(sheet: str, rules: list[ScoredRule]) -> list[ScoredRule]:
-     
-     return rules
+    """A tool-level error whose message is safe to return to the LLM."""
+
+
+def auto_confirmer(sheet: str, rules: list[ScoredRule]) -> list[ScoredRule]:
+    return rules
 
 
 class AuditSession:

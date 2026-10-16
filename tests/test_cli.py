@@ -44,6 +44,22 @@ def test_bad_input_exits_cleanly(tmp_path, capsys):
     assert "unsupported file type" in capsys.readouterr().err
 
 
+def test_report_opens_only_in_a_terminal_and_not_with_no_open(samples, tmp_path, monkeypatch):
+    opened = []
+    monkeypatch.setattr("sheet_audit.cli.open_report", opened.append)
+    args = [str(samples["clean"]), "--no-llm", "--auto", "--force", "-o", str(tmp_path / "r.md")]
+
+    monkeypatch.setattr("sys.stdout.isatty", lambda: False)
+    main(args)
+    assert opened == []  # scripts and CI: never
+
+    monkeypatch.setattr("sys.stdout.isatty", lambda: True)
+    main([*args, "--no-open"])
+    assert opened == []
+    main(args)
+    assert opened == [tmp_path / "r.md"]
+
+
 def test_non_interactive_without_auto_is_refused(samples, tmp_path, monkeypatch):
     monkeypatch.setattr("sys.stdin.isatty", lambda: False)
     assert main([str(samples["clean"]), "--no-llm", "-o", str(tmp_path / "r.md")]) == 2

@@ -1,6 +1,9 @@
 
 import argparse
 import logging
+import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -51,6 +54,23 @@ def interactive_confirmer(sheet: str, rules: list[ScoredRule]) -> list[ScoredRul
     return rules
 
 
+def open_report(path: Path) -> None:
+    """Open the report: in VS Code when run from its terminal, otherwise with the system default app."""
+    path = path.resolve()
+    try:
+        code = shutil.which("code")
+        if os.environ.get("TERM_PROGRAM") == "vscode" and code:
+            subprocess.run([code, str(path)], check=False)  # argument list, no shell
+        elif sys.platform == "win32":
+            os.startfile(path)
+        elif sys.platform == "darwin":
+            subprocess.run(["open", str(path)], check=False)
+        else:
+            subprocess.run(["xdg-open", str(path)], check=False)
+    except OSError as exc:
+        log.warning("could not open the report automatically (%s)", type(exc).__name__)
+
+
 def load_contract(path: Path) -> ContractFile:
     try:
         return ContractFile.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")) or {})
@@ -68,6 +88,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     p.add_argument("--save-contract", type=Path, help="write the accepted rules to this YAML file")
     p.add_argument("--sheet", action="append", help="audit only this sheet (repeatable)")
     p.add_argument("--force", action="store_true", help="overwrite an existing report or contract file")
+    p.add_argument("--no-open", action="store_true", help="don't open the report when the audit finishes")
     p.add_argument("-v", "--verbose", action="store_true", help="log progress (metadata only, never cell values)")
     return p.parse_args(argv)
 
@@ -82,9 +103,9 @@ def _check_output(path: Path, source: Path, force: bool) -> None:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
-    # Export .env into the process environment so boto3 sees AWS_* values too.
-    # Variables already set in the shell take precedence.
-    load_dotenv()
+    # Export ./.env into the process environment so boto3 sees AWS_* values too.
+    # Only the current directory, like Settings; variables already set in the shell win.
+    load_dotenv(Path.cwd() / ".env")
     settings = Settings()
     out = args.out or Path(f"{args.file.stem}_audit.md")
 
@@ -135,6 +156,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"{len(findings)} finding(s), {high} high severity. Report written to {out}")
     if skipped:
         print(f"Not audited: {', '.join(clean(s, 64) for s in skipped)} (see report for reasons)")
+    # Only when a person is watching: never pop windows in scripts or CI.
+    if not args.no_open and sys.stdout.isatty():
+        open_report(out)
     return EXIT_OK
 
 

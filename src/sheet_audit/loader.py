@@ -19,7 +19,10 @@ MAX_TRAILING_EMPTY_ROWS = 1000
 
 
 class InputError(Exception):
-   def load_file(path: str | Path, settings: Settings) -> list[SheetTable]:
+    """The file cannot be loaded. The message is safe to show to the user."""
+
+
+def load_file(path: str | Path, settings: Settings) -> list[SheetTable]:
     path = Path(path)
     if not path.is_file():
         raise InputError(f"file not found: {path.name}")
